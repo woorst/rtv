@@ -1,8 +1,10 @@
 import os
+import re
 import sys
 import argparse
 import locale
 import logging
+from collections import OrderedDict
 
 import requests
 import praw
@@ -25,8 +27,6 @@ def load_config():
     saved settings for things like the username and password.
     """
 
-    config = configparser.ConfigParser()
-
     HOME = os.path.expanduser('~')
     XDG_CONFIG_HOME = os.getenv('XDG_CONFIG_HOME', os.path.join(HOME, '.config'))
     config_paths = [
@@ -34,21 +34,28 @@ def load_config():
         os.path.join(HOME, '.rtv')
     ]
 
-    # read only the first existing config file
+    config = configparser.ConfigParser()
     for config_path in config_paths:
         if os.path.exists(config_path):
             config.read(config_path)
             break
 
-    defaults = {}
-    if config.has_section('rtv'):
-        defaults = dict(config.items('rtv'))
-
+    defaults = dict(config.items('rtv')) if 'rtv' in config.sections() else {}
     if 'ascii' in defaults:
-        defaults['ascii'] = config.getboolean('rtv', 'ascii')
+        defaults['ascii'] = config['rtv'].getboolean('ascii')
 
-    return defaults
+    url_map = OrderedDict()
+    for section in config.sections():
+        if section.startswith('open-'):
+            patterns = config.get(section, 'pattern')
+            patterns = [p.strip() for p in patterns.split('\n')]
+            for pattern in patterns:
+                prog = re.compile(pattern)
+                background = config.getboolean(section, 'background')
+                command = config.get(section, 'command')
+                url_map[prog] = {'command': command, 'background': background}
 
+    return defaults, url_map
 
 def command_line():
 
@@ -80,7 +87,7 @@ def main():
     locale.setlocale(locale.LC_ALL, '')
 
     args = command_line()
-    local_config = load_config()
+    local_config, url_map = load_config()
 
     # set the terminal title
     title = 'rtv {0}'.format(__version__)
@@ -96,6 +103,7 @@ def main():
             setattr(args, key, val)
 
     config.unicode = (not args.ascii)
+    config.url_map = url_map
 
     # Squelch SSL warnings for Ubuntu
     logging.captureWarnings(True)

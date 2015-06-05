@@ -100,8 +100,23 @@ def open_browser(url):
     are not detected here.
     """
 
-    console_browsers = ['www-browser', 'links', 'links2', 'elinks', 'lynx', 'w3m']
+    # Check if the URL matches a custom command from the config file
+    for prog, command in config.url_map.items():
+        if prog.match(url):
+            if command['background']:
+                with open(os.devnull, 'ab+', 0) as null:
+                    # Non-blocking, run with a full shell to support pipes
+                    # This does not check for errors with the command
+                    subprocess.Popen(command['command'] % url, stdout=null,
+                                     stderr=null, shell=True)
+            else:
+                curses.endwin()
+                raise Exception(command['command'] % url)
+                subprocess.check_call(command['command'] % url)
+                curses.doupdate()
+            return
 
+    console_browsers = ['www-browser', 'links', 'links2', 'elinks', 'lynx', 'w3m']
     display = bool(os.environ.get("DISPLAY"))
 
     # Use the convention defined here to parse $BROWSER
