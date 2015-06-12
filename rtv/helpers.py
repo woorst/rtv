@@ -106,13 +106,12 @@ def open_browser(url):
             if command['background']:
                 with open(os.devnull, 'ab+', 0) as null:
                     # Non-blocking, run with a full shell to support pipes
-                    # This does not check for errors with the command
+                    # This does not check if the command is successful or not
                     subprocess.Popen(command['command'] % url, stdout=null,
                                      stderr=null, shell=True)
             else:
                 curses.endwin()
-                raise Exception(command['command'] % url)
-                subprocess.check_call(command['command'] % url)
+                subprocess.check_call(command['command'] % url, shell=True)
                 curses.doupdate()
             return
 
