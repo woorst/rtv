@@ -34,7 +34,7 @@ def load_config():
         os.path.join(HOME, '.rtv')
     ]
 
-    config = configparser.ConfigParser()
+    config = configparser.RawConfigParser()
     for config_path in config_paths:
         if os.path.exists(config_path):
             config.read(config_path)

@@ -1,14 +1,19 @@
+from __future__ import print_function
+
 import sys
 import os
+import time
 import curses
 import webbrowser
 import subprocess
+from subprocess import PIPE
 from datetime import datetime
 from tempfile import NamedTemporaryFile
 
 # kitchen solves deficiencies in textwrap's handling of unicode characters
 from kitchen.text.display import wrap, textual_width_chop
 import six
+from six.moves import input
 
 from . import config
 from .exceptions import ProgramError
@@ -81,6 +86,38 @@ def open_editor(data=''):
 
     return text
 
+def open_url(url):
+
+    # Check if the URL matches a custom command from the config file
+    for prog, command in config.url_map.items():
+        if prog.match(url):
+            cmd = command['command'] % url
+            if command['background']:
+                # Non-blocking, run with a full shell to support pipes
+                p = subprocess.Popen(cmd, stdout=PIPE, stderr=PIPE,
+                                     shell=True, universal_newlines=True)
+                # Wait a little while to make sure that the command doesn't
+                # exit with an error. This isn't perfect, but it should be
+                # good enough to catch invalid commands.
+                time.sleep(1.0)
+                code = p.poll()
+                if code is not None and code != 0:
+                    stdout, stderr = p.communicate()
+                    curses.endwin()
+                    print(cmd, stderr, sep='\n')
+                    input('Press any key to continue')
+                    curses.doupdate()
+            else:
+                curses.endwin()
+                p = subprocess.Popen(cmd, shell=True)
+                code = p.wait()
+                if code != 0:
+                    input('Press any key to continue')
+                curses.doupdate()
+            return
+
+    # If there is no URL match, use the webbrowser
+    open_browser(url)
 
 def open_browser(url):
     """
@@ -101,21 +138,6 @@ def open_browser(url):
     There may be other cases where console browsers are opened (xdg-open?) but
     are not detected here.
     """
-
-    # Check if the URL matches a custom command from the config file
-    for prog, command in config.url_map.items():
-        if prog.match(url):
-            if command['background']:
-                with open(os.devnull, 'ab+', 0) as null:
-                    # Non-blocking, run with a full shell to support pipes
-                    # This does not check if the command is successful or not
-                    subprocess.Popen(command['command'] % url, stdout=null,
-                                     stderr=null, shell=True)
-            else:
-                curses.endwin()
-                subprocess.check_call(command['command'] % url, shell=True)
-                curses.doupdate()
-            return
 
     console_browsers = ['www-browser', 'links', 'links2', 'elinks', 'lynx', 'w3m']
     display = bool(os.environ.get("DISPLAY"))
