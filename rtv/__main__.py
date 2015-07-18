@@ -53,7 +53,8 @@ def load_config():
                 prog = re.compile(pattern)
                 background = config.getboolean(section, 'background')
                 command = config.get(section, 'command')
-                url_map[prog] = {'command': command, 'background': background}
+                url_map[prog] = {'pattern': pattern, 'command': command,
+                                 'background': background}
 
     return defaults, url_map
 

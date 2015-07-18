@@ -88,6 +88,12 @@ def open_editor(data=''):
 
 def open_url(url):
 
+    if url.endswith('.gifv'):
+        # gifv is an imgur specific extension for what are essentially webm
+        # images. Change the extension so that external programs recognize them.
+        # TODO: Should do the same for gif links on imgur, webm is faster
+        url = url[:-4] + 'webm'
+
     # Check if the URL matches a custom command from the config file
     for prog, command in config.url_map.items():
         if prog.match(url):
