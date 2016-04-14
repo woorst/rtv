@@ -1,0 +1,40 @@
+Hi! I'm looking through the praw4 branch and trying to get a feel for how hard it would be to migrate my [app](https://github.com/michael-lazar/rtv) over. 
+
+*praw3*
+```python
+reddit = praw.Reddit(user_agent="test user agent")
+reddit.set_oauth_app_info("E2oEtRQfdfAfNQ", "", "http://127.0.0.1:65000/")
+
+# Redirect the user to a url and wait for them to generate a code 
+authorize_url = reddit.get_authorize_url("state", scope="read", refreshable=True)
+
+info = reddit.get_access_information(code)
+
+# Save the token so we don't have to do this next time
+token = info["refresh_token"]
+```
+
+*praw3*
+```python
+reddit = praw.Reddit(user_agent="test user agent")
+reddit.set_oauth_app_info("E2oEtRQfdfAfNQ", "", "http://127.0.0.1:65000/")
+reddit.refresh_access_information(token)
+```
+
+*praw4*
+```python
+requestor = prawcore.Requestor(user_agent)
+authenticator = prawcore.Authenticator(requestor, "E2oEtRQfdfAfNQ", "", redirect_uri="http://127.0.0.1:65000/")
+
+# Redirect the user to a url and wait for them to generate a code 
+authorize_url = authenticator.authorize_url("permanent", ["read"], "state")
+
+authorizer = prawcore.Authorizer(authenticator)
+authorizer.authorize(code)
+
+#  Save the token so we don't have to do this next time
+token = authorizer.refresh_token
+
+reddit = praw.Reddit(user_agent=user_agent, client_id="E2oEtRQfdfAfNQ", client_secret="")
+
+```
