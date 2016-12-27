@@ -477,7 +477,7 @@ class Terminal(object):
             command = (
                 "import webbrowser\n"
                 "from six.moves.urllib.parse import unquote\n"
-                "webbrowser.open_new_tab(unquote('%s'))" % quote(url))
+                "webbrowser.open_new(unquote('%s'))" % quote(url))
             args = [sys.executable, '-c', command]
             with self.loader('Opening page in a new window'), \
                     open(os.devnull, 'ab+', 0) as null:
@@ -508,7 +508,7 @@ class Terminal(object):
                         pass
         else:
             with self.suspend():
-                webbrowser.open_new_tab(url)
+                webbrowser.open_new(url)
 
     def open_pager(self, data):
         """
